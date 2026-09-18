@@ -61,7 +61,7 @@ export const createCourse = tryCatch(async (req, res) => {
     language: req.body.language,
     category: req.body.category,
     createdBy: req.body.createdBy,
-    image: file.path,
+    image: file.path.replace(/\\/g, "/"),
   });
 
   res.status(201).json({
@@ -95,7 +95,7 @@ export const addLecture = tryCatch(async (req, res) => {
   const lecture = await Lecture.create({
     title,
     description,
-    video: file?.path,
+    video: file.path.replace(/\\/g, "/"),
     course: course._id,
     chapter: req.body.chapter,   
   });
