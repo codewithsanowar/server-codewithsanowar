@@ -6,6 +6,7 @@ import { Lecture } from "../models/Lecture.js";
 import { Payment } from "../models/Payment.js";
 import { User } from "../models/user.js";
 import crypto from "crypto"
+import mongoose from "mongoose";
 
 export const getAllCourses = tryCatch(async(req,res) => {
     const courses = await Courses.find();
@@ -15,7 +16,19 @@ export const getAllCourses = tryCatch(async(req,res) => {
 });
 
 export const getSingleCourse = tryCatch(async(req,res) => {
-    const course = await Courses.findById(req.params.id)
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid course id",
+      });
+    }
+
+    const course = await Courses.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({
+        message: "Course not found",
+      });
+    }
 
     res.json({
         course,

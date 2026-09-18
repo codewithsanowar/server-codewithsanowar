@@ -9,35 +9,64 @@ import { User } from "../models/user.js";
 import { Chapter } from "../models/Chapter.js";
 
 export const createCourse = tryCatch(async (req, res) => {
-  // get uploaded file
-  const file = req.files[0]; // because you used upload.any()
+  const file = req.files?.find((uploadedFile) => uploadedFile.fieldname === "image");
 
   if (!file) {
-    return res.status(400).json({ message: "No file uploaded" });
+    return res.status(400).json({ message: "Course image is required" });
   }
 
-  // create image path
-  const imagePath = file.path;
-  // OR better:
-  // const imagePath = `uploads/${file.filename}`;
+  const requiredFields = [
+    "title",
+    "description",
+    "price",
+    "oldprice",
+    "duration",
+    "lessons",
+    "language",
+    "category",
+    "createdBy",
+  ];
+
+  const missingField = requiredFields.find(
+    (field) => !String(req.body[field] ?? "").trim(),
+  );
+
+  if (missingField) {
+    return res.status(400).json({
+      message: `${missingField} is required`,
+    });
+  }
+
+  const price = Number(req.body.price);
+  const oldprice = Number(req.body.oldprice);
+  const duration = Number(req.body.duration);
+
+  if (
+    !Number.isFinite(price) ||
+    !Number.isFinite(oldprice) ||
+    !Number.isFinite(duration)
+  ) {
+    return res.status(400).json({
+      message: "Price, old price, and duration must be valid numbers",
+    });
+  }
 
   const course = await Courses.create({
     title: req.body.title,
     description: req.body.description,
-    price: req.body.price,
-    oldprice: req.body.oldprice,
-    duration: req.body.duration,
+    price,
+    oldprice,
+    duration,
     lessons: req.body.lessons,
     language: req.body.language,
     category: req.body.category,
     createdBy: req.body.createdBy,
-
-    // ✅ IMPORTANT LINE
-    image: imagePath,
+    image: file.path,
   });
 
   res.status(201).json({
     success: true,
+    message: "Course created successfully",
     course,
   });
 });

@@ -3,35 +3,35 @@ import mongoose from "mongoose";
 const schema = new mongoose.Schema({
     title: {
         type: String,
-        require: true,
+        required: true,
     },
     description: {
         type: String,
-        require: true,
+        required: true,
     },
     image: {
         type: String,
-        require: true,
+        required: true,
     },
     price: {
         type: Number,
-        require: true,
+        required: true,
     },
     oldprice: {
         type: Number,
-        require: true,
+        required: true,
     },
     duration: {
         type: Number,
-        require: true,
+        required: true,
     },
     category: {
         type: String,
-        require: true,
+        required: true,
     },
     createdBy: {
         type: String,
-        require: true,
+        required: true,
     },
     createdAt: {
         type: Date,
@@ -39,11 +39,11 @@ const schema = new mongoose.Schema({
     },
     language: {
         type: String,
-        require: true,
+        required: true,
     },
     lessons: {
         type: String,
-        require: true,
+        required: true,
     },
    
 });
