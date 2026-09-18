@@ -9,7 +9,7 @@ import { User } from "../models/user.js";
 import { Chapter } from "../models/Chapter.js";
 
 export const createCourse = tryCatch(async (req, res) => {
-  const file = req.files?.find((uploadedFile) => uploadedFile.fieldname === "image");
+  const file = req.files?.find((f) => f.fieldname === "image");
 
   if (!file) {
     return res.status(400).json({ message: "Course image is required" });
