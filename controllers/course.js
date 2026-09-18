@@ -1,4 +1,4 @@
-import { instance, razorpayKeySecret, razorpayKeyId } from "../indext.js";
+import { instance, razorpayKeySecret, razorpayKeyId } from "../index.js";
 import tryCatch from "../middlewares/TryCatch.js";
 import { Chapter } from "../models/Chapter.js";
 import { Courses } from "../models/Courses.js";
