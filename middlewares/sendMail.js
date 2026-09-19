@@ -1,70 +1,40 @@
-import { createTransport } from "nodemailer";
+import nodemailer from "nodemailer";
 
+export const sendMail = async (to, subject, data) => {
+  // ✅ fail loudly and clearly if env vars are missing, instead of a vague crash
+  if (!process.env.Gmail_Email || !process.env.Gmail_Password) {
+    throw new Error(
+      "Email service is not configured — Gmail_Email or Gmail_Password env var is missing"
+    );
+  }
 
-const sendMail = async (email, subject, data) => {
-    const transport = createTransport({
-        host: "smtp.gmail.com",
-        port: 465,
-        auth: {
-            user: process.env.Gmail,
-            pass: process.env.Password,
-        },
-    });
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.Gmail_Email,
+      pass: process.env.Gmail_Password, // must be a 16-char Gmail App Password, not your normal password
+    },
+  });
 
-    const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OTP Verification</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        h1 {
-            color: red;
-        }
-        p {
-            margin-bottom: 20px;
-            color: #666;
-        }
-        .otp {
-            font-size: 36px;
-            color: #7b68ee; /* Purple text */
-            margin-bottom: 30px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>OTP Verification</h1>
-        <p>Hello ${data.name} your (One-Time Password) for your account verification is.</p>
-        <p class="otp">${data.otp}</p> 
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
+      <h2 style="color: #111827;">Hi ${data.name},</h2>
+      <p style="color: #374151; font-size: 15px;">
+        Your OTP for verifying your CodeWithSanowar account is:
+      </p>
+      <div style="font-size: 28px; font-weight: bold; letter-spacing: 4px; color: #111827; margin: 16px 0;">
+        ${data.otp}
+      </div>
+      <p style="color: #6b7280; font-size: 13px;">
+        This code expires in 5 minutes. If you didn't request this, you can safely ignore this email.
+      </p>
     </div>
-</body>
-</html>
-`;
+  `;
 
-
-    await transport.sendMail({
-        from: process.env.Gmail,
-        to: email,
-        subject,
-        html
-    })
+  await transporter.sendMail({
+    from: `"CodeWithSanowar" <${process.env.Gmail_Email}>`,
+    to,
+    subject,
+    html,
+  });
 };
-
-export default sendMail;
