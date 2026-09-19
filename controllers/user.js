@@ -48,8 +48,20 @@ export const register = tryCatch(async (req, res) => {
       otp,
     });
   } catch (error) {
-    // ✅ this will now show up clearly in your Render logs with the real reason
     console.error("❌ Email sending failed:", error.message);
+
+    // ✅ TEMPORARY DEV-MODE FALLBACK — remove this block once you verify a domain in Resend.
+    // This lets you keep testing registration end-to-end even though real email delivery
+    // is blocked by Resend's test-mode restriction.
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`🔑 [DEV ONLY] OTP for ${email}: ${otp}`);
+      return res.status(200).json({
+        message: "OTP sending failed, but check server logs for OTP (dev mode only)",
+        activationToken,
+        devOtp: otp, // ⚠️ remove this field before going live — never expose OTP in the API response in production
+      });
+    }
+
     return res.status(500).json({
       message: "Failed to send OTP email. Please try again later.",
     });
@@ -60,7 +72,6 @@ export const register = tryCatch(async (req, res) => {
     activationToken,
   });
 });
-
 export const verifyUser = tryCatch(async (req, res) => {
   const { otp, activationToken } = req.body;
 
