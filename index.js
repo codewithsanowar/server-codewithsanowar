@@ -35,10 +35,19 @@ app.use("/uploads", express.static(path.join(serverDirectory, "uploads")))
 
 // using mifflewares
 app.use(express.json())
+import cors from "cors";
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.Frontend_URL, // set this in Render to https://codewithsanowar-frontend.vercel.app (no trailing slash)
+];
+
 app.use(
   cors({
-    origin: process.env.Frontend_URL, // e.g. "https://your-frontend.vercel.app" — must be exact, no trailing slash
+    origin: allowedOrigins,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "token"],
   })
 );
 
