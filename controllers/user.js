@@ -8,105 +8,48 @@ import tryCatch from "../middlewares/TryCatch.js";
 // Register controllers
 
 export const register = tryCatch(async (req, res) => {
-  const { email, name, password } = req.body;
+    const { email, name, password } = req.body;
 
-  if (!email || !name || !password) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
+    let user = await User.findOne({ email });
 
-  let user = await User.findOne({ email });
-  if (user) {
-    return res.status(400).json({ message: "User already exists" });
-  }
-
-  const hashPassword = await bcrypt.hash(password, 10);
-
-  const userData = {
-    name,
-    email,
-    password: hashPassword,
-  };
-
-  const otp = Math.floor(100000 + Math.random() * 900000);
-
-  if (!process.env.Activation_Secret) {
-    console.error("❌ Activation_Secret is missing from environment variables");
-    return res.status(500).json({
-      message: "Server misconfiguration: Activation_Secret is not set",
+    if (user) return res.status(400).json({
+        message: "User Already exists"
     });
-  }
 
-  const activationToken = jwt.sign(
-    { user: userData, otp },
-    process.env.Activation_Secret,
-    { expiresIn: "5m" }
-  );
+    const hashPassword = await bcrypt.hash(password, 10)
 
-  try {
-    await sendMail(email, "CodeWithSanowar — Verify your account", {
-      name,
-      otp,
-    });
-  } catch (error) {
-    console.error("❌ Email sending failed:", error.message);
-
-    // ✅ TEMPORARY DEV-MODE FALLBACK — remove this block once you verify a domain in Resend.
-    // This lets you keep testing registration end-to-end even though real email delivery
-    // is blocked by Resend's test-mode restriction.
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`🔑 [DEV ONLY] OTP for ${email}: ${otp}`);
-      return res.status(200).json({
-        message: "OTP sending failed, but check server logs for OTP (dev mode only)",
-        activationToken,
-        devOtp: otp, // ⚠️ remove this field before going live — never expose OTP in the API response in production
-      });
+    user = {
+        name,
+        email,
+        password: hashPassword,
     }
 
-    return res.status(500).json({
-      message: "Failed to send OTP email. Please try again later.",
-    });
-  }
+    const otp = Math.floor(Math.random() * 1000000);
 
-  res.status(200).json({
-    message: "OTP sent to your email",
-    activationToken,
-  });
-});
-export const verifyUser = tryCatch(async (req, res) => {
-  const { otp, activationToken } = req.body;
+    const activationToken = jwt.sign({
+        user,
+        otp,
+    }, process.env.Activation_Secret,
+        {
+            expiresIn: "5m",
+        }
+    );
+    const data = {
+        name,
+        otp,
+    };
 
-  if (!otp || !activationToken) {
-    return res.status(400).json({ message: "OTP and activation token are required" });
-  }
+    await sendMail(
+        email,
+        "CodeWithSanowar",
+        data
+    )
 
-  let verify;
-  try {
-    verify = jwt.verify(activationToken, process.env.Activation_Secret);
-  } catch (error) {
-    return res.status(400).json({ message: "OTP expired or invalid, please try again" });
-  }
-
-  if (verify.otp !== Number(otp)) {
-    return res.status(400).json({ message: "Wrong OTP" });
-  }
-
-  const existingUser = await User.findOne({ email: verify.user.email });
-  if (existingUser) {
-    return res.status(400).json({ message: "User already exists" });
-  }
-
-  const newUser = await User.create(verify.user);
-
-  const token = jwt.sign({ _id: newUser._id }, process.env.Jwt_Secret, {
-    expiresIn: "15d",
-  });
-
-  res.status(201).json({
-    message: "User registered successfully",
-    user: newUser,
-    token,
-  });
-});
+    res.status(200).json({
+        message: "OTP send to your mail",
+        activationToken,
+    })
+})
 
 
 // VerifyUser controllers
