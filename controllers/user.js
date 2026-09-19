@@ -10,13 +10,11 @@ import tryCatch from "../middlewares/TryCatch.js";
 export const register = tryCatch(async (req, res) => {
   const { email, name, password } = req.body;
 
-  // ✅ basic validation so bad input fails clearly, not as a 500
   if (!email || !name || !password) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
   let user = await User.findOne({ email });
-
   if (user) {
     return res.status(400).json({ message: "User already exists" });
   }
@@ -29,9 +27,10 @@ export const register = tryCatch(async (req, res) => {
     password: hashPassword,
   };
 
-  const otp = Math.floor(100000 + Math.random() * 900000); // ✅ always 6 digits (was sometimes 5 or fewer before)
+  const otp = Math.floor(100000 + Math.random() * 900000);
 
   if (!process.env.Activation_Secret) {
+    console.error("❌ Activation_Secret is missing from environment variables");
     return res.status(500).json({
       message: "Server misconfiguration: Activation_Secret is not set",
     });
@@ -49,7 +48,8 @@ export const register = tryCatch(async (req, res) => {
       otp,
     });
   } catch (error) {
-    console.error("Email sending failed:", error.message);
+    // ✅ this will now show up clearly in your Render logs with the real reason
+    console.error("❌ Email sending failed:", error.message);
     return res.status(500).json({
       message: "Failed to send OTP email. Please try again later.",
     });
