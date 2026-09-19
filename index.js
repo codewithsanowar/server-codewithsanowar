@@ -38,7 +38,7 @@ app.use(express.json())
 import cors from "cors";
 
 const allowedOrigins = [
-  "http://localhost:5173",
+  "https://codewithsanowar-frontend.vercel.app",
   process.env.Frontend_URL, // set this in Render to https://codewithsanowar-frontend.vercel.app (no trailing slash)
 ];
 
