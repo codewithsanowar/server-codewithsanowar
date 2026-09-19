@@ -1,20 +1,11 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 export const sendMail = async (to, subject, data) => {
-  // ✅ fail loudly and clearly if env vars are missing, instead of a vague crash
-  if (!process.env.Gmail_Email || !process.env.Gmail_Password) {
-    throw new Error(
-      "Email service is not configured — Gmail_Email or Gmail_Password env var is missing"
-    );
+  if (!process.env.Resend_Api_Key) {
+    throw new Error("Resend_Api_Key is not set in environment variables");
   }
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.Gmail_Email,
-      pass: process.env.Gmail_Password, // must be a 16-char Gmail App Password, not your normal password
-    },
-  });
+  const resend = new Resend(process.env.Resend_Api_Key);
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
@@ -31,10 +22,20 @@ export const sendMail = async (to, subject, data) => {
     </div>
   `;
 
-  await transporter.sendMail({
-    from: `"CodeWithSanowar" <${process.env.Gmail_Email}>`,
+  const { data: result, error } = await resend.emails.send({
+    // ✅ "onboarding@resend.dev" works immediately with zero setup for testing.
+    // Once you verify your own domain in Resend's dashboard, switch this to
+    // something like "CodeWithSanowar <noreply@yourdomain.com>"
+    from: "CodeWithSanowar <onboarding@resend.dev>",
     to,
     subject,
     html,
   });
+
+  if (error) {
+    console.error("Resend error:", error);
+    throw new Error(error.message || "Failed to send email");
+  }
+
+  return result;
 };
