@@ -8,48 +8,69 @@ import tryCatch from "../middlewares/TryCatch.js";
 // Register controllers
 
 export const register = tryCatch(async (req, res) => {
-    const { email, name, password } = req.body;
+  const { email, name, password } = req.body;
 
-    let user = await User.findOne({ email });
+  if (!email || !name || !password) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
 
-    if (user) return res.status(400).json({
-        message: "User Already exists"
+  let user = await User.findOne({ email });
+
+  if (user)
+    return res.status(400).json({
+      message: "User Already exists",
     });
 
-    const hashPassword = await bcrypt.hash(password, 10)
+  const hashPassword = await bcrypt.hash(password, 10);
 
-    user = {
-        name,
-        email,
-        password: hashPassword,
-    }
+  user = {
+    name,
+    email,
+    password: hashPassword,
+  };
 
-    const otp = Math.floor(Math.random() * 1000000);
+  const otp = Math.floor(100000 + Math.random() * 900000); // ✅ always 6 digits
 
-    const activationToken = jwt.sign({
-        user,
-        otp,
-    }, process.env.Activation_Secret,
-        {
-            expiresIn: "5m",
-        }
-    );
-    const data = {
-        name,
-        otp,
-    };
+  if (!process.env.Activation_Secret) {
+    console.error("❌ Activation_Secret is missing");
+    return res.status(500).json({
+      message: "Server misconfiguration: Activation_Secret is not set",
+    });
+  }
 
-    await sendMail(
-        email,
-        "CodeWithSanowar",
-        data
-    )
+  const activationToken = jwt.sign(
+    {
+      user,
+      otp,
+    },
+    process.env.Activation_Secret,
+    {
+      expiresIn: "5m",
+    },
+  );
 
-    res.status(200).json({
-        message: "OTP send to your mail",
-        activationToken,
-    })
-})
+  const data = {
+    name,
+    otp,
+  };
+
+  // ✅ THIS is the fix — catch the email error specifically so it doesn't
+  // just bubble up as a generic 500 with no message
+  try {
+    await sendMail(email, "CodeWithSanowar", data);
+  } catch (error) {
+    console.error("❌ sendMail failed:", error.message);
+    return res.status(500).json({
+      message: "Failed to send OTP email: " + error.message,
+    });
+  }
+
+  res.status(200).json({
+    message: "OTP send to your mail",
+    activationToken,
+  });
+});
+
 
 
 // VerifyUser controllers
