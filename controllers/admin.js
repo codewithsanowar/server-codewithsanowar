@@ -9,7 +9,7 @@ import { User } from "../models/user.js";
 import { Chapter } from "../models/Chapter.js";
 
 export const createCourse = tryCatch(async (req, res) => {
-  const file = req.files?.find((f) => f.fieldname === "image");
+  const file = req.file;
 
   if (!file) {
     return res.status(400).json({ message: "Course image is required" });
@@ -61,7 +61,7 @@ export const createCourse = tryCatch(async (req, res) => {
     language: req.body.language,
     category: req.body.category,
     createdBy: req.body.createdBy,
-    image: file.path.replace(/\\/g, "/"),
+    image: `uploads/${file.filename}`,
   });
 
   res.status(201).json({
@@ -223,10 +223,13 @@ export const deleteCourse = tryCatch(async (req, res) => {
   });
 });
 export const getAllStats = tryCatch(async (req, res) => {
-  const totalCourse = (await Courses.find()).length;
-  const totalLectures = (await Lecture.find()).length;
-  const totalChapters = (await Chapter.find()).length;
-  const totalUser = (await User.find()).length;
+  const [totalCourse, totalLectures, totalChapters, totalUser] =
+    await Promise.all([
+      Courses.countDocuments(),
+      Lecture.countDocuments(),
+      Chapter.countDocuments(),
+      User.countDocuments(),
+    ]);
 
   const stats = {
     totalCourse,

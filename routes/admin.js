@@ -10,11 +10,11 @@ import {
   getAllUser,
   updateRole,
 } from "../controllers/admin.js";
-import { uploadFiles } from "../middlewares/multer.js";
+import { uploadFiles, uploadImage } from "../middlewares/multer.js";
 
 const router = express.Router();
 
-router.post("/course/new", isAuth, isAdmin, uploadFiles, createCourse);
+router.post("/course/new", isAuth, isAdmin, uploadImage, createCourse);
 router.post("/course/:id", isAuth, isAdmin, uploadFiles, addLecture);
 router.post("/chapter/:id", isAuth, isAdmin, uploadFiles, addChapter);
 router.delete("/course/:id", isAuth, isAdmin, deleteCourse);

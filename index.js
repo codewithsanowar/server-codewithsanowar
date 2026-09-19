@@ -3,6 +3,8 @@ import dotenv from "dotenv"
 import { connectDb } from "./Database/db.js";
 import Razorpay from "razorpay"
 import cors from "cors"
+import path from "path"
+import { fileURLToPath } from "url"
 
 
 
@@ -19,6 +21,7 @@ export { razorpayKeyId, razorpayKeySecret };
 const app = express();
 connectDb();
 const PORT = process.env.PORT;
+const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 
 
@@ -27,7 +30,7 @@ app.get("/", (req, res) => {
 })
 
 
-app.use("/uploads", express.static("uploads"))
+app.use("/uploads", express.static(path.join(serverDirectory, "uploads")))
 
 
 // using mifflewares

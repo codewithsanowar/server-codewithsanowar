@@ -9,7 +9,7 @@ import crypto from "crypto"
 import mongoose from "mongoose";
 
 export const getAllCourses = tryCatch(async(req,res) => {
-    const courses = await Courses.find();
+  const courses = await Courses.find().lean();
     res.json({
         courses,
     });
