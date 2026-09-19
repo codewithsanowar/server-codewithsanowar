@@ -23,9 +23,6 @@ export const sendMail = async (to, subject, data) => {
   `;
 
   const { data: result, error } = await resend.emails.send({
-    // ✅ "onboarding@resend.dev" works immediately with zero setup for testing.
-    // Once you verify your own domain in Resend's dashboard, switch this to
-    // something like "CodeWithSanowar <noreply@yourdomain.com>"
     from: "CodeWithSanowar <onboarding@resend.dev>",
     to,
     subject,
@@ -33,9 +30,19 @@ export const sendMail = async (to, subject, data) => {
   });
 
   if (error) {
-    console.error("Resend error:", error);
+    // ✅ this will print the EXACT Resend error to your Render logs
+    console.error("❌ Resend API error:", JSON.stringify(error, null, 2));
+
+    // ✅ detect the specific "test mode" restriction and say so clearly
+    if (error.message?.toLowerCase().includes("you can only send testing emails")) {
+      throw new Error(
+        "Resend test mode: you can only send to your own signup email until you verify a domain at resend.com/domains"
+      );
+    }
+
     throw new Error(error.message || "Failed to send email");
   }
 
+  console.log("✅ Email sent successfully:", result?.id);
   return result;
 };
