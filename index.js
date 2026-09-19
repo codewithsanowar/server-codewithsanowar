@@ -35,7 +35,12 @@ app.use("/uploads", express.static(path.join(serverDirectory, "uploads")))
 
 // using mifflewares
 app.use(express.json())
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.Frontend_URL, // e.g. "https://your-frontend.vercel.app" — must be exact, no trailing slash
+    credentials: true,
+  })
+);
 
 
 
