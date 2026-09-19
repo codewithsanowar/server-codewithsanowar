@@ -8,48 +8,94 @@ import tryCatch from "../middlewares/TryCatch.js";
 // Register controllers
 
 export const register = tryCatch(async (req, res) => {
-    const { email, name, password } = req.body;
+  const { email, name, password } = req.body;
 
-    let user = await User.findOne({ email });
+  // ✅ basic validation so bad input fails clearly, not as a 500
+  if (!email || !name || !password) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
 
-    if (user) return res.status(400).json({
-        message: "User Already exists"
+  let user = await User.findOne({ email });
+
+  if (user) {
+    return res.status(400).json({ message: "User already exists" });
+  }
+
+  const hashPassword = await bcrypt.hash(password, 10);
+
+  const userData = {
+    name,
+    email,
+    password: hashPassword,
+  };
+
+  const otp = Math.floor(100000 + Math.random() * 900000); // ✅ always 6 digits (was sometimes 5 or fewer before)
+
+  if (!process.env.Activation_Secret) {
+    return res.status(500).json({
+      message: "Server misconfiguration: Activation_Secret is not set",
     });
+  }
 
-    const hashPassword = await bcrypt.hash(password, 10)
+  const activationToken = jwt.sign(
+    { user: userData, otp },
+    process.env.Activation_Secret,
+    { expiresIn: "5m" }
+  );
 
-    user = {
-        name,
-        email,
-        password: hashPassword,
-    }
+  try {
+    await sendMail(email, "CodeWithSanowar — Verify your account", {
+      name,
+      otp,
+    });
+  } catch (error) {
+    console.error("Email sending failed:", error.message);
+    return res.status(500).json({
+      message: "Failed to send OTP email. Please try again later.",
+    });
+  }
 
-    const otp = Math.floor(Math.random() * 1000000);
+  res.status(200).json({
+    message: "OTP sent to your email",
+    activationToken,
+  });
+});
 
-    const activationToken = jwt.sign({
-        user,
-        otp,
-    }, process.env.Activation_Secret,
-        {
-            expiresIn: "5m",
-        }
-    );
-    const data = {
-        name,
-        otp,
-    };
+export const verifyUser = tryCatch(async (req, res) => {
+  const { otp, activationToken } = req.body;
 
-    await sendMail(
-        email,
-        "CodeWithSanowar",
-        data
-    )
+  if (!otp || !activationToken) {
+    return res.status(400).json({ message: "OTP and activation token are required" });
+  }
 
-    res.status(200).json({
-        message: "OTP send to your mail",
-        activationToken,
-    })
-})
+  let verify;
+  try {
+    verify = jwt.verify(activationToken, process.env.Activation_Secret);
+  } catch (error) {
+    return res.status(400).json({ message: "OTP expired or invalid, please try again" });
+  }
+
+  if (verify.otp !== Number(otp)) {
+    return res.status(400).json({ message: "Wrong OTP" });
+  }
+
+  const existingUser = await User.findOne({ email: verify.user.email });
+  if (existingUser) {
+    return res.status(400).json({ message: "User already exists" });
+  }
+
+  const newUser = await User.create(verify.user);
+
+  const token = jwt.sign({ _id: newUser._id }, process.env.Jwt_Secret, {
+    expiresIn: "15d",
+  });
+
+  res.status(201).json({
+    message: "User registered successfully",
+    user: newUser,
+    token,
+  });
+});
 
 
 // VerifyUser controllers
