@@ -95,7 +95,7 @@ export const addLecture = tryCatch(async (req, res) => {
   const lecture = await Lecture.create({
     title,
     description,
-    video: file.path.replace(/\\/g, "/"),
+    video: `uploads/${file.filename}`,
     course: course._id,
     chapter: req.body.chapter,   
   });
